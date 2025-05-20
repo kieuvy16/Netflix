@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Movie</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div class="container">
+          <h2 class="main-title">Movies</h2>
+          <div class="d-flex justify-content-between">
+            <a href="/admin/movie/create">
+              <button class="button-btn">New Movie</button>
+            </a>
+          </div>
+          <div class="users-table table-wrapper">
+            <input id="searchInput" type="text" placeholder="Search anything..." />
+            <table class="posts-table">
+              <thead>
+                <tr class="users-table-info">
+                  <th>Thumbnail</th>
+                  <th>Title</th>
+                  <th>Genre</th>
+                  <th>Date</th>
+                  <th>Price</th>
+                  <th>Comments</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="list-movie-admin">
+                <!-- Danh sách phim được render động -->
+              </tbody>
+            </table>
+          </div>
+          <div class="table-wrapper">
+            <ul class="pagination justify-content-start">
+              <!-- Phân trang thêm sau -->
+            </ul>
+          </div>
+        </div>
+        <footer class="footer"><%- include('./partials/footer-admin')%></footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+      }
+
+      // Hàm lấy và render danh sách movie
+      async function fetchMovies(query = '') {
+        try {
+          const url = query ? `/admin/api/movie/search?title=${encodeURIComponent(query)}` : '/admin/api/movies';
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            const movies = result.data;
+            const tbody = document.getElementById('list-movie-admin');
+            tbody.innerHTML = movies.map(movie => `
+                          <tr id="trow_${movie._id}">
+                              <td>
+                                  <label class="users-table__checkbox">
+                                      <div class="categories-table-img">
+                                          <picture>
+                                              <a href="#">
+                                                  <img src="${movie.thumbnail}" alt="${movie.title}" />
+                                              </a>
+                                          </picture>
+                                      </div>
+                                  </label>
+                              </td>
+                              <td>${movie.title}</td>
+                              <td>${movie.genre.name}</td>
+                              <td>${new Date(movie.createdAt).toLocaleDateString()}</td>
+                              <td>${movie.price !== 0 ? movie.price : 'Free'}</td>
+                              <!-- Tổng số comment của bộ phim bỏ vô đây -->
+                              <td>${0} |
+                                  <a href="/admin/movie/comment" class="comment-movie" data-id="${movie._id}">
+                                      <button class="btn btn-edit">Show</button>
+                                  </a>
+                              </td>
+                              <td>
+                                  <a href="/admin/movie/update?id=${movie._id}" id="edit" data-id="${movie._id}">
+                                      <button class="btn btn-edit">Edit</button>
+                                  </a> |
+                                  <a href="#" class="delete-movie" data-id="${movie._id}">
+                                      <button class="btn btn-delete">Delete</button>
+                                  </a>
+                              </td>
+                          </tr>
+                      `).join('');
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          Toastify({
+            text: error.message,
+            duration: 1500,
+            style: { background: 'red' },
+          }).showToast();
+        }
+      }
+      fetchMovies();
+
+      // Search movie
+      const debouncedFetchMovies = debounce(fetchMovies, 300);
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        debouncedFetchMovies(query);
+      });
+
+      // Xóa movie
+      document.getElementById('list-movie-admin').addEventListener('click', async (e) => {
+        if (e.target.closest('.delete-movie')) {
+          e.preventDefault();
+          const movieId = e.target.closest('.delete-movie').dataset.id;
+          if (confirm('Bạn có chắc muốn xóa phim này?')) {
+            try {
+              const response = await fetch(`/admin/api/movie/${movieId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+              });
+              const result = await response.json();
+
+              if (result.success) {
+                document.getElementById(`trow_${movieId}`).remove();
+                Toastify({
+                  text: 'Xóa phim thành công!',
+                  duration: 1500,
+                  style: { background: 'green' },
+                }).showToast();
+              } else {
+                throw new Error(result.message);
+              }
+            } catch (error) {
+              Toastify({
+                text: error.message,
+                duration: 1500,
+                style: { background: 'red' },
+              }).showToast();
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

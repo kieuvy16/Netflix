@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comment show</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div>
+          <h2 class="main-title">Tên bộ phim load vào đây</h2>
+          <a href="/admin/movie">
+            <button class="button-btn">X</button>
+          </a>
+          <div class="users-table table-wrapper">
+            <table class="movie-table">
+              <thead>
+                <tr class="users-table-info">
+                  <th>Comment</th>
+                  <th>User</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="list-genre-admin">
+                <!-- Danh sách comment được render động -->
+                <tr id="trow_${genre._id}">
+                  <td>Nội dung comment(Lấy nhiều nhất 15 từ sáu đó dùng ...)</td>
+                  <td>Tên user</td>
+                  <td>Ngày comment lấy trong comment</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="footer">
+          <%- include('./partials/footer-admin')%>
+        </footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script>
+
+  </script>
+</body>
+
+</html>

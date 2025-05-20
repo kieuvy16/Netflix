@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Genre</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.min.css" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div class="form-container">
+          <a href="/admin/genre"><button class="button-btn">x</button></a>
+          <form id="updateGenreForm" method="PUT">
+            <input type="hidden" id="genreId" value="" />
+            <div class="form-group">
+              <label for="genreName">Genre Name</label>
+              <input type="text" id="genreName" name="genreName" required />
+            </div>
+            <div class="form-group">
+              <button type="submit" class="submit-btn">Update Genre</button>
+            </div>
+          </form>
+        </div>
+        <footer class="footer"><%- include('./partials/footer-admin')%></footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script src="/asset-admin/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Lấy genreId 
+      const urlParams = new URLSearchParams(window.location.search);
+      const genreId = urlParams.get('id');
+
+      if (!genreId) {
+        Toastify({
+          text: 'Không tìm thấy ID thể loại',
+          duration: 1500,
+          style: { background: 'red' },
+        }).showToast();
+        return;
+      }
+
+      document.getElementById('genreId').value = genreId;
+
+      // Lấy dữ liệu genre
+      try {
+        const response = await fetch(`/api/genre/${genreId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById('genreName').value = result.data.name;
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        Toastify({
+          text: error.message,
+          duration: 1500,
+          style: { background: 'red' },
+        }).showToast();
+      }
+
+      // Xử lý form update
+      document.getElementById('updateGenreForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const genreName = document.getElementById('genreName').value;
+        const submitBtn = document.querySelector('.submit-btn');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
+
+        try {
+          const response = await fetch(`/admin/api/genre/${genreId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ name: genreName })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            Toastify({
+              text: 'Cập nhật thể loại thành công!',
+              duration: 1500,
+              style: { background: 'green' },
+            }).showToast();
+            setTimeout(() => { window.location.href = '/admin/genre'; }, 1500);
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          Toastify({
+            text: error.message,
+            duration: 1500,
+            style: { background: 'red' },
+          }).showToast();
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Update Genre';
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

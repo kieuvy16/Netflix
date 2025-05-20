@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Genre</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div>
+          <h2 class="main-title">Post Genre</h2>
+          <a href="/admin/genre/create">
+            <button class="button-btn">New Genre</button>
+          </a>
+          <div class="users-table table-wrapper">
+            <table class="posts-table">
+              <thead>
+                <tr class="users-table-info">
+                  <th>Title</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="list-genre-admin">
+                <!-- Danh sách thể loại được render động -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="footer">
+          <%- include('./partials/footer-admin')%>
+        </footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Lấy danh sách genre
+      try {
+        const response = await fetch('/admin/api/genres', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const genres = result.data;
+          const tbody = document.getElementById('list-genre-admin');
+          tbody.innerHTML = genres.map(genre => `
+                      <tr id="trow_${genre._id}">
+                          <td>${genre.name}</td>
+                          <td>${new Date(genre.createdAt).toLocaleDateString()}</td>
+                          <td>
+                              <a href="/admin/genre/update?id=${genre._id}" id="edit" data-id="${genre._id}">
+                                  <button class="btn btn-edit">Edit</button>
+                              </a> |
+                              <a href="#" class="delete-genre" data-id="${genre._id}">
+                                  <button class="btn btn-delete">Delete</button>
+                              </a>
+                          </td>
+                      </tr>
+                  `).join('');
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        Toastify({
+          text: error.message,
+          duration: 1500,
+          style: { background: 'red' },
+        }).showToast();
+      }
+
+      // Xóa genre
+      document.getElementById('list-genre-admin').addEventListener('click', async (e) => {
+        if (e.target.closest('.delete-genre')) {
+          e.preventDefault();
+          const genreId = e.target.closest('.delete-genre').dataset.id;
+          if (confirm('Bạn có chắc muốn xóa thể loại này?')) {
+            try {
+              const response = await fetch(`/admin/api/genre/${genreId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+              });
+              const result = await response.json();
+
+              if (result.success) {
+                document.getElementById(`trow_${genreId}`).remove();
+                Toastify({
+                  text: 'Xóa thể loại thành công!',
+                  duration: 1500,
+                  style: { background: 'green' },
+                }).showToast();
+              } else {
+                throw new Error(result.message);
+              }
+            } catch (error) {
+              Toastify({
+                text: error.message,
+                duration: 1500,
+                style: { background: 'red' },
+              }).showToast();
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

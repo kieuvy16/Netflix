@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Genre</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.min.css" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div class="form-container">
+          <a href="/admin/genre">
+            <button class="button-btn">x</button>
+          </a>
+          <form id="createGenreForm" method="POST">
+            <div class="form-group">
+              <label for="genreName">Genre Name</label>
+              <div class="bnt"></div>
+              <input type="text" id="genreName" name="genreName" required placeholder="Enter Genre name here">
+            </div>
+            <div class="form-group">
+              <button type="submit" id="submit" class="submit-btn">Create Genre</button>
+            </div>
+          </form>
+        </div>
+        <footer class="footer">
+          <%- include('./partials/footer-admin')%>
+        </footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script>
+    document.getElementById('createGenreForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const genreName = document.getElementById('genreName').value;
+      const submitBtn = document.getElementById('submit');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+
+      try {
+        const response = await fetch('/admin/api/genre', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ name: genreName })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          Toastify({
+            text: 'Tạo thể loại thành công!',
+            duration: 1500,
+            style: { background: 'green' },
+          }).showToast();
+          setTimeout(() => { window.location.href = '/admin/genre'; }, 1500);
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        Toastify({
+          text: error.message,
+          duration: 1500,
+          style: { background: 'red' },
+        }).showToast();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Genre';
+      }
+    });
+  </script>
+</body>
+
+</html>

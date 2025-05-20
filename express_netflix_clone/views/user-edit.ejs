@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit User</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div class="container">
+          <div class="form-container">
+            <a href="/admin/user">
+              <button class="button-btn">x</button>
+            </a>
+            <form action="" id="updateUserForm" enctype="multipart/form-data" method="PUT">
+              <input type="hidden" id="userId" />
+              <div class="form-group">
+                <label for="userName">User name</label>
+                <div class="bnt"></div>
+                <input type="text" id="userName" name="userName" required placeholder="Enter user name here" />
+              </div>
+              <div class="form-group">
+                <label for="urlAvater">Url avatar</label>
+                <div class="bnt"></div>
+                <input type="url" id="urlAvatar" name="urlAvatar" required placeholder="Enter url avatar here" />
+              </div>
+              <div class="form-group">
+                <label for="birthday">Birthday</label>
+                <div class="bnt"></div>
+                <input type="date" id="birthday" name="birthday" rows="5" required
+                  placeholder="Write your birthday here"></input>
+              </div>
+              <div class="form-group">
+                <label for="password">New password</label>
+                <div class="bnt"></div>
+                <input type="password" id="password" name="password" rows="5" required
+                  placeholder="Write your new password here"></input>
+              </div>
+
+              <div class="form-group">
+                <button type="submit" class="submit-btn">Update user</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <footer class="footer">
+          <%- include('./partials/footer-admin')%>
+        </footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      feather.replace();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id');
+      document.getElementById('userId').value = userId;
+
+      // Hàm lấy thông tin user
+      async function fetchUser() {
+        try {
+          const response = await fetch(`/admin/api/user/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            const user = result.data;
+            document.getElementById('userName').value = user.username || '';
+            document.getElementById('urlAvatar').value = user.avatar || '';
+            document.getElementById('birthday').value = user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '';
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          Toastify({
+            text: error.message,
+            duration: 3000,
+            style: { background: 'red' },
+          }).showToast();
+        }
+      }
+
+      if (userId) {
+        fetchUser();
+      }
+
+      // Xử lý submit form
+      document.getElementById('updateUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('userId').value;
+        const username = document.getElementById('userName').value;
+        const avatar = document.getElementById('urlAvatar').value;
+        const birthDate = document.getElementById('birthday').value;
+        const password = document.getElementById('password').value;
+
+        const updates = {};
+        if (username) updates.username = username;
+        if (avatar) updates.avatar = avatar;
+        if (birthDate) updates.birthDate = birthDate;
+        if (password) updates.password = password;
+
+        try {
+          const response = await fetch(`/admin/api/user/${userId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(updates)
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            Toastify({
+              text: 'Cập nhật người dùng thành công!',
+              duration: 1500,
+              style: { background: 'green' },
+            }).showToast();
+            setTimeout(() => {
+              window.location.href = '/admin/user';
+            }, 1500);
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          Toastify({
+            text: error.message,
+            duration: 2000,
+            style: { background: 'red' },
+          }).showToast();
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Movie</title>
+  <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="/asset-admin/css/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+  <div class="layer"></div>
+  <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+  <div class="page-flex">
+    <%- include('./partials/sidebar-admin')%>
+      <div class="main-wrapper">
+        <header>
+          <%- include('./partials/header-admin')%>
+        </header>
+        <div class="container">
+          <div class="form-container">
+            <a href="/admin/movie">
+              <button class="button-btn">x</button>
+            </a>
+            <form action="" id="updateMovieForm" enctype="multipart/form-data" method="PUT">
+              <input type="hidden" id="movieId" />
+              <div class="form-group">
+                <label for="title">Movie Title</label>
+                <div class="bnt"></div>
+                <input type="text" id="title" name="title" required placeholder="Enter title here" />
+              </div>
+              <div class="form-group">
+                <label for="urlMovie">Url movie</label>
+                <div class="bnt"></div>
+                <input type="url" id="urlMovie" name="urlMovie" required placeholder="Enter url movie here" />
+              </div>
+              <div class="form-group">
+                <label for="txaContent">Movie Content</label>
+                <div class="bnt"></div>
+                <textarea id="txaContent" name="txaContent" rows="5" required
+                  placeholder="Write your content here..."></textarea>
+              </div>
+              <div class="form-group">
+                <label for="imageFile">Movie Image</label>
+                <div class="bnt"></div>
+                <input type="url" id="imageFile" name="imageFile" required placeholder="Enter image URL here" />
+              </div>
+              <div class="form-group">
+                <label for="genre">Genre</label>
+                <div class="bnt"></div>
+                <select id="genre" name="genre" required>
+                  <option value="">Select a genre</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="priceMovie">Price</label>
+                <div class="bnt"></div>
+                <input type="number" id="priceMovie" name="priceMovie" placeholder="Enter price movie here"
+                  style="width: 150px;" />
+              </div>
+              <div class="form-group">
+                <label for="isPaid">Is Paid?</label>
+                <input type="checkbox" id="isPaid" name="isPaid" />
+              </div>
+              <div class="form-group">
+                <button type="submit" class="submit-btn">Update movie</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <footer class="footer">
+          <%- include('./partials/footer-admin')%>
+        </footer>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/asset-admin/plugins/chart.min.js"></script>
+  <script src="/asset-admin/plugins/feather.min.js"></script>
+  <script src="/asset-admin/js/script.js"></script>
+  <script src="/asset-admin/ckeditor/ckeditor.js"></script>
+  <script>
+    CKEDITOR.replace("txaContent", {
+      uiColor: "#9AB8F3",
+      extraPlugins: "filebrowser,uploadimage",
+      filebrowserBrowseUrl: "/browse",
+      filebrowserUploadMethod: "form",
+      filebrowserUploadUrl: "/uploadfile",
+      removePlugins: "exportpdf",
+      language: "vi",
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Lấy movieId
+      const urlParams = new URLSearchParams(window.location.search);
+      const movieId = urlParams.get('id');
+
+      if (!movieId) {
+        Toastify({
+          text: 'Không tìm thấy ID phim',
+          duration: 3000,
+          style: { background: 'red' },
+        }).showToast();
+        return;
+      }
+
+      document.getElementById('movieId').value = movieId;
+
+      // Lấy danh sách genre
+      try {
+        const genreResponse = await fetch('/api/genre', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const genreResult = await genreResponse.json();
+
+        if (genreResult.success) {
+          const genres = genreResult.data;
+          const select = document.getElementById('genre');
+          genres.forEach(genre => {
+            const option = document.createElement('option');
+            option.value = genre._id;
+            option.textContent = genre.name;
+            select.appendChild(option);
+          });
+        } else {
+          throw new Error(genreResult.message);
+        }
+      } catch (error) {
+        Toastify({
+          text: error.message,
+          duration: 3000,
+          style: { background: 'red' },
+        }).showToast();
+      }
+
+      // Lấy dữ liệu movie
+      try {
+        const movieResponse = await fetch(`/api/movie/${movieId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const movieResult = await movieResponse.json();
+
+        if (movieResult.success) {
+          const movie = movieResult.data;
+          document.getElementById('title').value = movie.title;
+          document.getElementById('urlMovie').value = movie.videoUrl;
+          CKEDITOR.instances.txaContent.setData(movie.description);
+          document.getElementById('imageFile').value = movie.thumbnail;
+          document.getElementById('genre').value = movie.genre._id;
+          document.getElementById('priceMovie').value = movie.price;
+          document.getElementById('isPaid').checked = movie.isPaid;
+        } else {
+          throw new Error(movieResult.message);
+        }
+      } catch (error) {
+        Toastify({
+          text: error.message,
+          duration: 3000,
+          style: { background: 'red' },
+        }).showToast();
+      }
+
+      // Xử lý form update
+      document.getElementById('updateMovieForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const videoUrl = document.getElementById('urlMovie').value;
+        const description = CKEDITOR.instances.txaContent.getData();
+        const thumbnail = document.getElementById('imageFile').value;
+        const genre = document.getElementById('genre').value;
+        const isPaid = document.getElementById('isPaid').checked;
+        const price = document.getElementById('priceMovie').value;
+        const submitBtn = document.querySelector('.submit-btn');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
+
+        try {
+          const response = await fetch(`/admin/api/movie/${movieId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              title,
+              description,
+              videoUrl,
+              thumbnail,
+              genre,
+              isPaid,
+              price: isPaid ? price : 0
+            })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            Toastify({
+              text: 'Cập nhật phim thành công!',
+              duration: 3000,
+              style: { background: 'green' },
+            }).showToast();
+            setTimeout(() => { window.location.href = '/admin/movie'; }, 1500);
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          Toastify({
+            text: error.message,
+            duration: 1500,
+            style: { background: 'red' },
+          }).showToast();
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Update movie';
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

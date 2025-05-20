@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All Users</title>
+    <link rel="shortcut icon" href="/asset-admin/img/svg/logo.svg" type="image/x-icon" />
+    <link rel="stylesheet" href="/asset-admin/css/style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+</head>
+
+<body>
+    <div class="layer"></div>
+    <a class="skip-link sr-only" href="#skip-target">Skip to content</a>
+    <div class="page-flex">
+        <%- include('./partials/sidebar-admin')%>
+            <div class="main-wrapper">
+                <header>
+                    <%- include('./partials/header-admin')%>
+                </header>
+
+                <div class="container">
+                    <h2 class="main-title">Users</h2>
+                    <div class="users-table table-wrapper">
+                        <table class="posts-table">
+                            <thead>
+                                <tr class="users-table-info">
+                                    <th>Avatar</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Birthday</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-user-admin">
+                                <!-- Danh sách người dùng render động -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <footer class="footer">
+                    <%- include('./partials/footer-admin')%>
+                </footer>
+            </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/asset-admin/plugins/chart.min.js"></script>
+    <script src="/asset-admin/plugins/feather.min.js"></script>
+    <script src="/asset-admin/js/script.js"></script>
+    <script src="/asset-admin/js/auth.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Lấy danh sách user với role user
+            async function fetchUsers() {
+                try {
+                    const response = await fetch('/admin/api/users?role=user', {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        const users = result.data;
+                        const tbody = document.getElementById('list-user-admin');
+                        tbody.innerHTML = users.map(user => `
+                          <tr id="trow_${user._id}">
+                              <td>
+                                  <label class="users-table__checkbox">
+                                      <div class="categories-table-img">
+                                          <picture>
+                                              <a href="#">
+                                                  <img src="${user.avatar || '/asset-admin/img/avatars/avatar-illustrated-02.png'}" alt="${user.username}" />
+                                              </a>
+                                          </picture>
+                                      </div>
+                                  </label>
+                              </td>
+                              <td>${user.username}</td>
+                              <td>${user.email}</td>
+                              <td>${user.birthDate ? new Date(user.birthDate).toLocaleDateString() : 'N/A'}</td>
+                              <td>
+                                  <a href="/admin/user/update?id=${user._id}" class="edit-user" data-id="${user._id}">
+                                      <button class="btn btn-edit">Edit</button>    
+                                  </a>
+                              </td>
+                              <td>
+                                  <a href="#" class="delete-user" data-id="${user._id}" data-active="${user.isActive}">
+                                      <button class="btn ${user.isActive ? 'btn-delete' : 'btn-activate'}">${user.isActive ? 'Active' : 'Deactivated'}</button>
+                                  </a>
+                              </td>
+                          </tr>
+                      `).join('');
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    Toastify({
+                        text: error.message,
+                        duration: 3000,
+                        style: { background: 'red' },
+                    }).showToast();
+                }
+            }
+
+            // Gọi hàm lấy danh sách user
+            fetchUsers();
+
+            // Xử lý chuyển đổi trạng thái
+            document.getElementById('list-user-admin').addEventListener('click', async (e) => {
+                if (e.target.closest('.delete-user')) {
+                    e.preventDefault();
+                    const userId = e.target.closest('.delete-user').dataset.id;
+                    const isActive = e.target.closest('.delete-user').dataset.active === 'true';
+                    const actionText = isActive ? 'vô hiệu hóa' : 'kích hoạt lại';
+                    const confirmMessage = `Bạn có chắc muốn ${actionText} người dùng này?`;
+
+                    if (confirm(confirmMessage)) {
+                        try {
+                            const response = await fetch(`/admin/api/user/toggle/${userId}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ isActive: !isActive })
+                            });
+                            const result = await response.json();
+
+                            if (result.success) {
+                                const row = document.getElementById(`trow_${userId}`);
+                                const statusCell = row.querySelector('.delete-user');
+                                statusCell.dataset.active = !isActive;
+                                const button = statusCell.querySelector('button');
+                                button.textContent = isActive ? 'Deactivated' : 'Active';
+                                button.classList.remove(isActive ? 'btn-delete' : 'btn-activate');
+                                button.classList.add(!isActive ? 'btn-delete' : 'btn-activate');
+
+                                Toastify({
+                                    text: `Đã ${actionText} người dùng thành công!`,
+                                    duration: 1500,
+                                    style: { background: 'green' },
+                                }).showToast();
+                            } else {
+                                throw new Error(result.message);
+                            }
+                        } catch (error) {
+                            Toastify({
+                                text: error.message,
+                                duration: 2000,
+                                style: { background: 'red' },
+                            }).showToast();
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
